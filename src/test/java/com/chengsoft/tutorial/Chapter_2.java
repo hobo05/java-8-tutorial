@@ -9,14 +9,43 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.DoubleSummaryStatistics;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 public class Chapter_2 {
+	
+	Person tim = null;
+	
+	@Before
+	public void before() {
+		tim = Person.builder()
+				.name("Tim")
+				.age(28)
+				.siblings(Arrays.asList(
+					Person.builder()
+						.name("Jonathan")
+						.age(31)
+						.build(),
+					Person.builder()
+						.name("Bill")
+						.age(10)
+						.build(),
+					Person.builder()
+						.name("Bertha")
+						.age(34)
+						.build()))
+				.build();
+	}
 
 	@Test
 	@Ignore
@@ -152,24 +181,8 @@ public class Chapter_2 {
 	}
 	
 	@Test
+	@Ignore
 	public void testOptionCreate() {
-		Person tim = Person.builder()
-			.name("Tim")
-			.age(28)
-			.siblings(Arrays.asList(
-				Person.builder()
-					.name("Jonathan")
-					.age(31)
-					.build(),
-				Person.builder()
-					.name("Bill")
-					.age(10)
-					.build(),
-				Person.builder()
-					.name("Bertha")
-					.age(34)
-					.build()))
-			.build();
 		// First time with existing siblings
 		System.out.printf("Tim's Eldest Sibling: ");
 		getEldestSibling(tim)
@@ -181,12 +194,93 @@ public class Chapter_2 {
 		.ifPresent(System.out::println);
 		
 	}
-	public Optional<Person> getEldestSibling(Person person) {
-		if (!Optional.ofNullable(person.getSiblings()).isPresent()) {
-			return Optional.empty();
-		}
-		return person.getSiblings().stream()
-			.sorted(Comparator.comparing(Person::getAge).reversed())
-			.findFirst();
+	private Optional<Person> getEldestSibling(Person person) {
+		// This is obviated with the use of Optional.flatMp()
+//		if (!Optional.ofNullable(person.getSiblings()).isPresent()) {
+//			return Optional.empty();
+//		}
+		// Create Optional from possible null list of siblings
+		return Optional.ofNullable(person.getSiblings())
+			// 
+			.flatMap(x -> x.stream()
+				.sorted(Comparator.comparing(Person::getAge).reversed())
+				.findFirst());
+	}
+	
+	@Test
+	@Ignore
+	public void testReduce() {
+		List<String> words = Arrays.asList("Joe", "Tim", "Dan");
+		// Reduce with variables
+		words.stream()
+		.mapToInt(String::length)
+		.reduce((x, y) -> x+y)
+		.ifPresent(System.out::println);
+		
+		// Reduce with method reference
+		words.stream()
+			.mapToInt(String::length)
+			.reduce(Integer::sum)
+			.ifPresent(System.out::println);
+		
+		// Use built-in sum() for int streams
+		int result = words.stream()
+		.mapToInt(String::length)
+		.sum();
+		System.out.println(result);
+		
+		// Reduce with identity (starting value), avoids Optional
+		result = words.stream()
+			.mapToInt(String::length)
+			.reduce(5, (x,y) -> x+y);
+		System.out.println(result);
+		// Reduce using String object
+		result = words.stream()
+			.reduce(5, 
+					(total, word) -> total+word.length(), 
+					(total1, total2) -> total1 + total2);
+		System.out.println(result);
+		
+		String combined = words.stream()
+				// The identity determines the type for 'total'
+			.reduce("", 
+					(total, word) -> total+" "+word, 
+					(total1, total2) -> total1 + total2);
+		System.out.println(combined);
+	}
+	
+	@Test
+	@Ignore
+	public void testCollector() {
+		List<String> words = Arrays.asList("Joey", "Timmy", "Dan");
+		HashSet<String> results = 
+				words.stream()
+				.filter(s -> s.length() > 3)
+				// 1) Create the HashSet for each value
+				// 2) Add the value to a HashSet
+				// 3) Combine all the HashSets together
+				.collect(HashSet::new, HashSet::add, HashSet::addAll);
+		System.out.println(results);
+		
+		// String collector
+		String result = words.stream()
+		.filter(s -> s.length() > 3)
+		.collect(Collectors.joining("+", "Sir ", " of US"));
+		System.out.println(result);
+		
+		// Statistic collector
+		DoubleSummaryStatistics stats = words.stream()
+		.collect(Collectors.summarizingDouble(String::length));
+		System.out.println(stats);
+		
+		// Map collector
+		Map<String, Person> myMap = tim.getSiblings().stream()
+				.collect(Collectors.toMap(Person::getName, Function.identity()));
+			System.out.println(myMap);
+	}
+	
+	@Test
+	public void test() {
+
 	}
 }
