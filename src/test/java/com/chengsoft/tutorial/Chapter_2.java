@@ -8,12 +8,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.DoubleSummaryStatistics;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,6 +23,8 @@ import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import com.google.common.collect.FluentIterable;
 
 public class Chapter_2 {
 	
@@ -273,14 +277,71 @@ public class Chapter_2 {
 		.collect(Collectors.summarizingDouble(String::length));
 		System.out.println(stats);
 		
-		// Map collector
-		Map<String, Person> myMap = tim.getSiblings().stream()
-				.collect(Collectors.toMap(Person::getName, Function.identity()));
-			System.out.println(myMap);
 	}
 	
 	@Test
-	public void test() {
-
+	public void testMapCollecting() {
+		// Map collector
+		Map<String, Person> myMap = tim.getSiblings().stream()
+				.collect(Collectors.toMap(Person::getName, Function.identity()));
+		System.out.println(myMap);
+		
+		List<Person> people = Arrays.asList(
+				Person.builder().name("John").age(25).build(),
+				Person.builder().name("Tim").age(26).build(),
+				Person.builder().name("Amy").age(27).build(),
+				Person.builder().name("Will").age(25).build(),
+				Person.builder().name("Seth").age(25).build());
+		
+		// Collect people by age with comma-separated names
+		Map<Integer, String> peopleByAgeCommaMap = people.stream().collect(
+				Collectors.toMap(
+						Person::getAge, 
+						Person::getName,
+						// Resolve values that match to the same key
+						// Here we just join the values with a comma
+						(existingValue,newValue) -> existingValue+","+newValue));
+		System.out.println(peopleByAgeCommaMap);
+		
+		// The same map as above using groupingBy() and mapping()
+		Map<Integer, String> peopleByAgeGroupByMappingCommaDelimited = people.stream().collect(
+				Collectors.groupingBy(Person::getAge, 
+					Collectors.mapping(Person::getName, Collectors.joining(","))));
+		System.out.println(peopleByAgeGroupByMappingCommaDelimited);
+		
+		// Collect people by age and put names in a Set
+		Map<Integer, Set<String>> peopleByAgeMapWithSet = people.stream().collect(
+				Collectors.toMap(
+						Person::getAge, 
+						// Return a collection with a single item
+						p -> Collections.singleton(p.getName()),
+						// Combine the two sets
+						(existingValue,newValue) -> {
+							Set<String> nameSet = new HashSet<>(existingValue);
+							nameSet.addAll(newValue);
+							return nameSet;
+						}));
+		System.out.println(peopleByAgeMapWithSet);
+		
+		// The same map as above using groupingBy() and mapping()
+		Map<Integer, Set<String>> peopleByAgeMapWithSetGroupByMapping = people.stream().collect(
+				Collectors.groupingBy(Person::getAge, 
+						Collectors.mapping(Person::getName, Collectors.toSet())));
+		System.out.println(peopleByAgeMapWithSetGroupByMapping);
+		
+		// Group by Person by age
+		Map<Integer, List<Person>> peopleByAgeMapWithSetUsingGroupBy = people.stream().collect(
+				Collectors.groupingBy(Person::getAge));
+				// Use groupByConcurrent to return a concurrent map that can
+				// be used in a parallel stream
+//				Collectors.groupingByConcurrent(Person::getAge));
+		System.out.println(peopleByAgeMapWithSetUsingGroupBy);
+		
+		// Partition just uses two lists and is faster
+		Map<Boolean, List<Person>> peopleByAgeMapWithSetUsingPartioning = people.stream().collect(
+				// Partition by people older than 25
+				Collectors.partitioningBy(p -> p.getAge() > 25));
+		System.out.println(peopleByAgeMapWithSetUsingPartioning);
+		
 	}
 }
