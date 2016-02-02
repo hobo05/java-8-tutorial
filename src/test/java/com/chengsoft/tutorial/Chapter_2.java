@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.Before;
@@ -280,6 +281,7 @@ public class Chapter_2 {
 	}
 	
 	@Test
+	@Ignore
 	public void testMapCollecting() {
 		// Map collector
 		Map<String, Person> myMap = tim.getSiblings().stream()
@@ -343,5 +345,34 @@ public class Chapter_2 {
 				Collectors.partitioningBy(p -> p.getAge() > 25));
 		System.out.println(peopleByAgeMapWithSetUsingPartioning);
 		
+	}
+	
+	private void printIntStream(IntStream stream) {
+		System.out.println(Arrays.toString(stream.toArray()));
+	}
+	
+	@Test
+	@Ignore
+	public void testPrimitiveStreams() {
+		// Exclusive upper bound
+		printIntStream(IntStream.range(0, 5));
+		// Inclusive upper bound
+		printIntStream(IntStream.rangeClosed(0, 5));
+		
+		// Map objects to ints
+		printIntStream(Stream.of("apple", "boy", "cat").mapToInt(String::length));
+		
+		// Box primitives
+		IntStream.range(0, 10).boxed();
+	}
+	
+	@Test
+	public void testParallelStreams() {
+		// Must be stateless
+		// Must be threadsafe
+		// Use unordered to speed up certain operations
+		
+		// This will just get you the ANY element in the stream
+		Stream.of("stream", "thread", "stateless").parallel().unordered().limit(1);
 	}
 }
