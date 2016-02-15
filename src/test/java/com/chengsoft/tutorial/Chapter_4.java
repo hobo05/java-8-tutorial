@@ -42,6 +42,7 @@ public class Chapter_4 extends Application implements Initializable {
         Path path = Paths.get("src/test/resources/chapter_4.fxml");
         Parent root = FXMLLoader.load(path.toUri().toURL());
         stage.setScene(new Scene(root));
+        stage.show();
     }
 
     @Override
